@@ -1,0 +1,444 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>单词趣味消消乐 - 对战模式</title>
+    <style>
+        :root {
+            --main-bg: #FFF5F5;
+            --container-bg: #FFFFFF;
+            --accent: #FFB3C6;
+            --text: #66462C;
+        }
+
+        body {
+            background: var(--main-bg);
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 微软雅黑, sans-serif;
+        }
+
+        .game-container {
+            background: var(--container-bg);
+            border-radius: 30px;
+            padding: 30px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            border: 3px solid var(--accent);
+            width: 90%;
+            max-width: 1200px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .title {
+            font-size: 3.5em; /* 调大标题字体 */
+            color: var(--text);
+            margin: 0 0 20px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+
+        .difficulty-btn {
+            font-size: 1.5em; /* 调大按钮字体 */
+            padding: 15px 35px; /* 调大按钮内边距 */
+            border-radius: 25px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .difficulty-btn.active {
+            background: #FF759F;
+            transform: scale(1.05);
+        }
+
+        #timer {
+            text-align: center;
+            font-size: 2em; /* 调大计时器字体 */
+            color: var(--text);
+            margin: 15px 0;
+        }
+
+        .game-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 20px 0;
+        }
+
+        .column {
+            background: #FFF0F0;
+            border-radius: 20px;
+            padding: 20px;
+            min-height: 300px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            align-content: flex-start;
+        }
+
+        .card {
+            font-size: 2em; /* 调大卡片字体 */
+            color: var(--text);
+            background: white;
+            border-radius: 15px;
+            padding: 15px 30px; /* 调大卡片内边距 */
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            user-select: none;
+            animation: cardAppear 0.3s ease-out;
+        }
+
+        @keyframes cardAppear {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        .card.selected {
+            transform: scale(0.95);
+            background: #FFF5F5;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .card.matched {
+            animation: popOut 0.4s forwards;
+        }
+
+        @keyframes popOut {
+            0% { transform: scale(1); opacity: 1 }
+            100% { transform: scale(0); opacity: 0 }
+        }
+
+        .victory-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .victory-card {
+            background: white;
+            padding: 50px 80px; /* 调大弹窗内边距 */
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: scaleIn 0.3s ease-out;
+        }
+
+        @keyframes scaleIn {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        .pk-title {
+            font-size: 3em; /* 调大PK标题字体 */
+            color: var(--text);
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .victory-card h2 {
+            font-size: 3em; /* 调大胜利弹窗标题字体 */
+            color: #FF6B6B;
+            margin: 0 0 20px 0;
+        }
+
+        .victory-card p {
+            font-size: 2em; /* 调大胜利弹窗内容字体 */
+            color: #666;
+        }
+
+        .victory-card button {
+            font-size: 1.5em; /* 调大按钮字体 */
+            margin-top: 20px;
+            padding: 15px 40px; /* 调大按钮内边距 */
+            background: #FFB3C6;
+            border: none;
+            border-radius: 25px;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .victory-card button:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1 class="title">单词趣味消消乐 - 对战模式</h1>
+            <div id="timer">时间: 玩家1 - 0秒 | 玩家2 - 0秒</div>
+        </div>
+
+        <div class="controls">
+            <button class="difficulty-btn active" data-difficulty="7">青铜</button>
+            <button class="difficulty-btn" data-difficulty="14">白银</button>
+            <button class="difficulty-btn" data-difficulty="20">黄金</button>
+        </div>
+
+        <div class="pk-title">最强王者PK</div>
+
+        <div class="game-columns">
+            <div class="column" id="player1Column"></div>
+            <div class="column" id="player2Column"></div>
+        </div>
+    </div>
+
+    <audio id="clickSound" src="click.mp3"></audio>
+    <audio id="errorSound" src="error.mp3"></audio>
+    <audio id="successSound" src="success.mp3"></audio>
+    <audio id="winSound" src="win.mp3"></audio>
+
+<script>
+const WORD_LIST = [
+    { eng: 'wealth', cn: 'n. 财富；钱财' },
+{ eng: 'differ', cn: 'vi. 有区别；不同于' },
+{ eng: 'view', cn: 'n. 看法；观点' },
+{ eng: 'following', cn: 'adj. 下列的' },
+{ eng: 'tale', cn: 'n. 故事' },
+{ eng: 'wise', cn: 'adj. 聪明的；有智慧的' },
+{ eng: 'recognize', cn: 'vt. 认识；（辨）认出' },
+{ eng: 'sympathy', cn: 'n. 同情；同情心' },
+{ eng: 'exactly', cn: 'adv. 确切地；准确地' },
+{ eng: 'invite', cn: 'vt. 邀请' },
+{ eng: 'add', cn: 'vt. 补充；继续说' },
+{ eng: 'argue', cn: 'v. 争辩；争论' },
+{ eng: 'advice', cn: 'n. 劝告；忠告；意见' },
+{ eng: 'amazed', cn: 'adj. 吃惊的；惊异的' },
+{ eng: 'as well', cn: '也；又' },
+{ eng: 'out of', cn: '因为；由于；出于' },
+{ eng: 'point to', cn: '指向' },
+{ eng: 'fill...with...', cn: '注满；填满' },
+{ eng: 'jump in', cn: '突然插话；打断别人的谈话' },
+{ eng: 'take someone\'s advice', cn: '接受某人的建议；听从某人的劝告' }
+];
+
+let gameState = {
+    player1: {
+        selected: [],
+        timer: 0,
+        timerId: null,
+        isProcessing: false,
+        currentDifficulty: 7
+    },
+    player2: {
+        selected: [],
+        timer: 0,
+        timerId: null,
+        isProcessing: false,
+        currentDifficulty: 7
+    },
+    isGameOver: false
+};
+
+// 游戏初始化
+function initGame() {
+    clearInterval(gameState.player1.timerId);
+    clearInterval(gameState.player2.timerId);
+    gameState.player1.timer = 0;
+    gameState.player2.timer = 0;
+    gameState.player1.selected = [];
+    gameState.player2.selected = [];
+    gameState.player1.isProcessing = false;
+    gameState.player2.isProcessing = false;
+    gameState.isGameOver = false;
+    updateTimerDisplay();
+
+    const words = prepareWords();
+    renderCards(words);
+    startTimer();
+}
+
+// 准备单词数据
+function prepareWords() {
+    const count = Math.min(gameState.player1.currentDifficulty, WORD_LIST.length);
+    const selected = shuffle([...WORD_LIST]).slice(0, count);
+    return shuffle([...selected.map(w => ({ ...w, type: 'english' })), ...selected.map(w => ({ ...w, type: 'chinese' }))]);
+}
+
+// 渲染卡片
+function renderCards(words) {
+    const renderColumn = (items, columnId) => {
+        const column = document.getElementById(columnId);
+        column.innerHTML = items.map(item => `
+            <div class="card" 
+                 data-word="${item.eng}"
+                 data-type="${item.type}"
+                 onclick="handleCardClick(this, '${columnId.includes('1') ? 'player1' : 'player2'}')">
+                ${item.type === 'english' ? item.eng : item.cn}
+            </div>
+        `).join('');
+    };
+
+    renderColumn(words, 'player1Column');
+    renderColumn(words, 'player2Column');
+}
+
+// 处理卡片点击
+function handleCardClick(card, player) {
+    const playerState = gameState[player];
+    if (playerState.isProcessing || card.classList.contains('matched')) return;
+
+    playSound('click');
+    card.classList.add('selected');
+    playerState.selected.push(card);
+
+    if (playerState.selected.length === 2) {
+        checkMatch(player);
+    }
+}
+
+// 检查匹配
+function checkMatch(player) {
+    const playerState = gameState[player];
+    playerState.isProcessing = true;
+    const [first, second] = playerState.selected;
+
+    setTimeout(() => {
+        if (isValidMatch(first, second)) {
+            processSuccess(first, second, player);
+        } else {
+            processError(first, second, player);
+        }
+        playerState.selected = [];
+        playerState.isProcessing = false;
+    }, 500);
+}
+
+// 验证匹配有效性
+function isValidMatch(card1, card2) {
+    return card1.dataset.word === card2.dataset.word &&
+           card1.dataset.type !== card2.dataset.type;
+}
+
+// 处理成功匹配
+function processSuccess(card1, card2, player) {
+    playSound('success');
+    [card1, card2].forEach(c => {
+        c.classList.add('matched');
+        setTimeout(() => {
+            c.remove();
+            checkVictory(player); // 每次移除后检查胜利条件
+        }, 400);
+    });
+}
+
+// 处理错误匹配
+function processError(card1, card2, player) {
+    playSound('error');
+    [card1, card2].forEach(c => c.classList.remove('selected'));
+}
+
+// 检查胜利条件
+function checkVictory(player) {
+    const remaining = document.querySelectorAll(`#${player === 'player1' ? 'player1Column' : 'player2Column'} .card`).length;
+    if (remaining === 0) {
+        clearInterval(gameState[player].timerId);
+        if (!gameState.isGameOver) {
+            gameState.isGameOver = true;
+            showVictoryModal(player);
+        }
+    }
+}
+
+// 显示胜利弹窗
+function showVictoryModal(player) {
+    playSound('win');
+    
+    const overlay = document.createElement('div');
+    overlay.className = 'victory-overlay';
+    
+    const victoryCard = document.createElement('div');
+    victoryCard.className = 'victory-card';
+    victoryCard.innerHTML = `
+        <h2>🎉 ${player === 'player1' ? '玩家1' : '玩家2'} 闯关成功！</h2>
+        <p>用时：${gameState[player].timer}秒<br>难度：${getDifficultyText()}</p>
+        <button onclick="this.parentElement.parentElement.remove(); initGame()">继续挑战</button>
+    `;
+
+    overlay.appendChild(victoryCard);
+    document.body.appendChild(overlay);
+
+    // 比较两个玩家的时间
+    if (gameState.player1.timer > 0 && gameState.player2.timer > 0) {
+        const winner = gameState.player1.timer < gameState.player2.timer ? '玩家1' : '玩家2';
+    }
+}
+
+// 其他辅助函数
+function startTimer() {
+    gameState.player1.timerId = setInterval(() => {
+        gameState.player1.timer++;
+        updateTimerDisplay();
+    }, 1000);
+
+    gameState.player2.timerId = setInterval(() => {
+        gameState.player2.timer++;
+        updateTimerDisplay();
+    }, 1000);
+}
+
+function updateTimerDisplay() {
+    document.getElementById('timer').textContent = `时间: 玩家1 - ${gameState.player1.timer}秒 | 玩家2 - ${gameState.player2.timer}秒`;
+}
+
+function getDifficultyText() {
+    const map = {5:'容易',10:'普通',15:'困难'};
+    return map[gameState.player1.currentDifficulty] || '未知';
+}
+
+function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
+function playSound(type) {
+    const audio = document.getElementById(`${type}Sound`);
+    audio.currentTime = 0;
+    audio.play();
+}
+
+// 事件监听
+document.querySelectorAll('.difficulty-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        gameState.player1.currentDifficulty = parseInt(btn.dataset.difficulty);
+        gameState.player2.currentDifficulty = parseInt(btn.dataset.difficulty);
+        initGame();
+    });
+});
+
+// 初始化游戏
+initGame();
+</script>
+</body>
+</html>
